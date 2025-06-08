@@ -2,7 +2,7 @@ const express = require('express');
 const serverless = require('serverless-http');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
-const pool = require('../db');
+const pool = require('./db');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const dotenv = require('dotenv');
@@ -15,6 +15,11 @@ app.use(cors());
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
+
+// Rute default
+app.get('/', (req, res) => {
+  res.send('FoodLens API is running');
+});
 
 // Middleware untuk autentikasi token
 const authenticateToken = (req, res, next) => {
@@ -58,21 +63,27 @@ app.post('/api/login', async (req, res) => {
 
 // REGISTER
 app.post('/api/register', async (req, res) => {
-  const { email, password } = req.body;
-  const hashedPassword = await bcrypt.hash(password, 10);
-  try {
-    const check = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (check.rows.length > 0) {
-      return res.status(400).json({ message: 'Email already registered', data: null });
+    const { email, password } = req.body;
+    // Tambahkan validasi input dasar di sini sebelum hashing/query
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required', data: null });
     }
-    const result = await pool.query(
-      'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email',
-      [email, hashedPassword]
-    );
-    res.status(201).json({ message: 'Register successful', data: result.rows[0] });
-  } catch (err) {
-    res.status(400).json({ message: err.message, data: null });
-  }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    try {
+        const check = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        if (check.rows.length > 0) {
+            return res.status(400).json({ message: 'Email already registered', data: null });
+        }
+        const result = await pool.query(
+            'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email',
+            [email, hashedPassword]
+        );
+        res.status(201).json({ message: 'Register successful', data: result.rows[0] });
+    } catch (err) {
+        // Log error secara detail di sini
+        console.error('Error during user registration:', err.message, err.stack); // <<< TAMBAHKAN INI
+        res.status(500).json({ message: 'Internal server error during registration', data: null }); // Ubah 400 menjadi 500 jika ini adalah error server internal
+    }
 });
 
 // FORGOT PASSWORD
@@ -153,6 +164,16 @@ app.get('/api/makanan', async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message, data: null });
   }
+});
+
+const port = process.env.PORT || 5000;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
+
+app.use((err, req, res, next) => {
+  console.error('Error:', err.stack);
+  res.status(500).json({ message: "Internal Server Error", data: null });
 });
 
 module.exports = serverless(app);

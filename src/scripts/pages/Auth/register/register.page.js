@@ -52,25 +52,34 @@ export default class RegisterPage {
       authModel: AuthModel,
     });
     document.getElementById('register-form').addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const email = document.getElementById('register-email')?.value;
-      const password = document.getElementById('register-password')?.value;
-      const confirmPassword = document.getElementById('register-confirm-password')?.value;
-      const errorDiv = document.getElementById('register-error');
-      if (!email || !password || !confirmPassword || !errorDiv) {
-        console.error('One or more elements are missing in the DOM.');
-        return;
-      }
-      if (password !== confirmPassword) {
-        errorDiv.textContent = 'Passwords do not match!';
-        errorDiv.style.display = 'block';
-        return;
-      }
-      errorDiv.style.display = 'none';
+    event.preventDefault();
+    const email = document.getElementById('register-email')?.value;
+    const password = document.getElementById('register-password')?.value;
+    const confirmPassword = document.getElementById('register-confirm-password')?.value;
+    const errorDiv = document.getElementById('register-error');
+
+    if (!email || !password || !confirmPassword || !errorDiv) {
+      console.error('One or more elements are missing in the DOM.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      errorDiv.textContent = 'Passwords do not match!';
+      errorDiv.style.display = 'block';
+      return;
+    }
+    errorDiv.style.display = 'none';
+
+    // >>> Tambahkan ini untuk menampilkan loading state
+    this.showSubmitLoadingButton(); 
+    try {
       await this.#presenter.register({ email, password });
-    });
-    this.initPasswordToggle();
-  }
+    } finally {
+      // >>> Pastikan loading state disembunyikan setelah selesai (baik sukses/gagal)
+      this.hideSubmitLoadingButton(); 
+    }
+  });
+  this.initPasswordToggle();
+}
 
   initPasswordToggle() {
     document.querySelectorAll('.input-group').forEach((group) => {
