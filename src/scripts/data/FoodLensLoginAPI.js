@@ -1,4 +1,4 @@
-const BASE_URL = 'https://foodlens-backend-production-c5b2.up.railway.app/api';
+const BASE_URL = 'http://localhost:5000/api';
 
 const FoodLensLoginAPI = {
   async getLogin({ email, password }) {
